@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candlestick Pattern Recognition Trainer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4">
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold text-center mb-2 text-blue-400">Candlestick Pattern Trainer</h1>
+  <p class="text-center text-gray-400 text-sm mb-4">Identify the candlestick pattern shown</p>
+
+  <div class="flex justify-between items-center mb-4">
+    <div class="text-sm text-gray-400">Score: <span id="score" class="text-green-400 font-bold">0</span> / <span id="total" class="text-gray-300">0</span></div>
+    <div id="streak" class="text-sm text-yellow-400"></div>
+    <button onclick="newQuestion()" class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">New Chart</button>
+  </div>
+
+  <canvas id="chart" width="600" height="280" class="w-full bg-gray-800 rounded border border-gray-700 mb-4" aria-label="Candlestick chart for pattern recognition"></canvas>
+
+  <div id="feedback" class="mb-4 text-center text-lg font-bold min-h-[28px]"></div>
+
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4" id="choices"></div>
+
+  <div id="explanation" class="bg-gray-800 rounded p-3 text-sm text-gray-300 min-h-[48px]"></div>
+
+  <div class="mt-4 bg-gray-800 rounded p-3">
+    <h2 class="text-sm font-semibold text-purple-400 mb-2">Pattern Guide</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-400" id="guide"></div>
+  </div>
+</div>
+
+<script>
+const patterns = [
+  {
+    name: 'Hammer',
+    desc: 'Bullish reversal. Small body at top, long lower wick (2x+ body). Appears after downtrend.',
+    generate: () => {
+      const candles = randomDowntrend(8);
+      const last = { open: 50, close: 53, high: 55, low: 30 };
+      candles.push(last);
+      return candles;
+    }
+  },
+  {
+    name: 'Shooting Star',
+    desc: 'Bearish reversal. Small body at bottom, long upper wick. Appears after uptrend.',
+    generate: () => {
+      const candles = randomUptrend(8);
+      const last = { open: 80, close: 77, high: 100, low: 75 };
+      candles.push(last);
+      return candles;
+    }
+  },
+  {
+    name: 'Bullish Engulfing',
+    desc: 'Bullish reversal. Large green candle completely engulfs previous red candle.',
+    generate: () => {
+      const candles = randomDowntrend(7);
+      candles.push({ open: 42, close: 38, high: 43, low: 37 });
+      candles.push({ open: 36, close: 45, high: 46, low: 35 });
+      return candles;
+    }
+  },
+  {
+    name: 'Bearish Engulfing',
+    desc: 'Bearish reversal. Large red candle completely engulfs previous green candle.',
+    generate: () => {
+      const candles = randomUptrend(7);
+      candles.push({ open: 75, close: 80, high: 81, low: 74 });
+      candles.push({ open: 82, close: 73, high: 83, low: 72 });
+      return candles;
+    }
+  },
+  {
+    name: 'Doji',
+    desc: 'Indecision. Open and close are almost equal, creating a cross shape.',
+    generate: () => {
+      const candles = randomUptrend(8);
+      candles.push({ open: 70, close: 70.5, high: 78, low: 63 });
+      return candles;
+    }
+  },
+  {
+    name: 'Three Black Crows',
+    desc: 'Strong bearish signal. Three consecutive long red candles with lower closes.',
+    generate: () => {
+      const candles = randomUptrend(6);
+      candles.push({ open: 82, close: 75, high: 83, low: 74 });
+      candles.push({ open: 74, close: 67, high: 75, low: 66 });
+      candles.push({ open: 66, close: 59, high: 67, low: 58 });
+      return candles;
+    }
+  },
+  {
+    name: 'Morning Star',
+    desc: 'Bullish reversal. Large red candle, small middle candle (gap), large green candle.',
+    generate: () => {
+      const candles = randomDowntrend(6);
+      candles.push({ open: 55, close: 48, high: 56, low: 47 });
+      candles.push({ open: 46, close: 47, high: 49, low: 45 });
+      candles.push({ open: 48, close: 56, high: 57, low: 47 });
+      return candles;
+    }
+  },
+  {
+    name: 'Inverted Hammer',
+    desc: 'Bullish reversal. Small body at bottom, long upper wick. After downtrend.',
+    generate: () => {
+      const candles = randomDowntrend(8);
+      candles.push({ open: 38, close: 41, high: 55, low: 37 });
+      return candles;
+    }
+  },
+];
+
+function randomDowntrend(n) {
+  const candles = [];
+  let price = 70 + Math.random()*10;
+  for (let i = 0; i < n; i++) {
+    const o = price + Math.random()*3;
+    const c = price - 1 - Math.random()*3;
+    candles.push({ open: o, close: c, high: o + Math.random()*2, low: c - Math.random()*2 });
+    price = c;
+  }
+  return candles;
+}
+
+function randomUptrend(n) {
+  const candles = [];
+  let price = 50 + Math.random()*10;
+  for (let i = 0; i < n; i++) {
+    const o = price - Math.random()*2;
+    const c = price + 1.5 + Math.random()*3;
+    candles.push({ open: o, close: c, high: c + Math.random()*2, low: o - Math.random()*2 });
+    price = c;
+  }
+  return candles;
+}
+
+let currentPattern = null;
+let score = 0, total = 0, streak = 0;
+
+function drawCandles(candles) {
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#1f2937';
+  ctx.fillRect(0, 0, W, H);
+
+  const prices = candles.flatMap(c => [c.high, c.low]);
+  const minP = Math.min(...prices) - 2;
+  const maxP = Math.max(...prices) + 2;
+  const range = maxP - minP;
+  const margin = 20;
+  const chartH = H - 2*margin;
+
+  function toY(p) { return margin + (1 - (p - minP) / range) * chartH; }
+
+  const cw = (W - 40) / candles.length;
+  candles.forEach((c, i) => {
+    const x = 20 + i * cw + cw * 0.1;
+    const w = cw * 0.8;
+    const isGreen = c.close >= c.open;
+    ctx.strokeStyle = isGreen ? '#4ade80' : '#f87171';
+    ctx.fillStyle = isGreen ? '#4ade80' : '#f87171';
+    ctx.lineWidth = 1.5;
+
+    // Wick
+    ctx.beginPath();
+    ctx.moveTo(x + w/2, toY(c.high));
+    ctx.lineTo(x + w/2, toY(c.low));
+    ctx.stroke();
+
+    // Body
+    const bodyTop = toY(Math.max(c.open, c.close));
+    const bodyBot = toY(Math.min(c.open, c.close));
+    const bodyH = Math.max(2, bodyBot - bodyTop);
+    ctx.fillRect(x, bodyTop, w, bodyH);
+  });
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = margin + i * chartH / 4;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '10px monospace';
+    ctx.fillText((maxP - i * range / 4).toFixed(0), 2, y - 2);
+  }
+}
+
+function newQuestion() {
+  const idx = Math.floor(Math.random() * patterns.length);
+  currentPattern = patterns[idx];
+  const candles = currentPattern.generate();
+  drawCandles(candles);
+
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('explanation').textContent = '';
+
+  // Shuffle choices (correct + 3 random wrongs)
+  const others = patterns.filter((_, i) => i !== idx);
+  const wrong = others.sort(() => Math.random() - 0.5).slice(0, 3);
+  const choices = [currentPattern, ...wrong].sort(() => Math.random() - 0.5);
+
+  const div = document.getElementById('choices');
+  div.innerHTML = '';
+  choices.forEach(p => {
+    const btn = document.createElement('button');
+    btn.textContent = p.name;
+    btn.className = 'bg-gray-700 hover:bg-blue-700 border border-gray-600 px-3 py-2 rounded text-sm font-medium transition-colors';
+    btn.onclick = () => answer(p.name, btn);
+    btn.setAttribute('aria-label', 'Select pattern: ' + p.name);
+    div.appendChild(btn);
+  });
+}
+
+function answer(name, btn) {
+  total++;
+  const correct = name === currentPattern.name;
+  if (correct) { score++; streak++; }
+  else { streak = 0; }
+
+  document.getElementById('score').textContent = score;
+  document.getElementById('total').textContent = total;
+  document.getElementById('streak').textContent = streak > 1 ? '🔥 Streak: ' + streak : '';
+  document.getElementById('feedback').textContent = correct ? '✓ Correct!' : '✗ Wrong!';
+  document.getElementById('feedback').className = 'mb-4 text-center text-lg font-bold ' + (correct ? 'text-green-400' : 'text-red-400');
+  document.getElementById('explanation').textContent = currentPattern.desc;
+
+  // Highlight buttons
+  document.querySelectorAll('#choices button').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === currentPattern.name) b.className = 'bg-green-700 border border-green-500 px-3 py-2 rounded text-sm font-medium';
+    else if (b === btn && !correct) b.className = 'bg-red-800 border border-red-500 px-3 py-2 rounded text-sm font-medium';
+    else b.className = 'bg-gray-800 border border-gray-700 px-3 py-2 rounded text-sm font-medium opacity-50';
+  });
+}
+
+// Guide
+const guide = document.getElementById('guide');
+patterns.forEach(p => {
+  const div = document.createElement('div');
+  div.innerHTML = `<strong class="text-yellow-300">${p.name}:</strong> ${p.desc}`;
+  guide.appendChild(div);
+});
+
+newQuestion();
+</script>
+</body>
+</html>
